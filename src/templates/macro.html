@@ -10,8 +10,10 @@
         {% if login %}
             <a class="btn btn-outline-info my-2 my-sm-0" href="/logout">logout</a>
         {% else %}
+        <div class="btn-group" role="group">
             <a class="btn btn-outline-info my-2 my-sm-0" href="/login">login</a>
-            <a class="btn btn-info my-2 my-sm-0" href="/signup">signup</a>
+            <a class="btn btn-info my-2 my-sm-0" href="/signup">sign up</a>
+        </div>
         {% endif %}
     </nav>
 {%- endmacro %}
