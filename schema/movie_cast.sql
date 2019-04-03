@@ -8,6 +8,6 @@ CREATE TABLE movie_cast ( -- actor table
     FOREIGN KEY (movie_id) REFERENCES movie(movie_id),
     FOREIGN KEY (staff_id) REFERENCES staff(staff_id)
 );
-COPY movie_cast FROM '/home/zhuzilin/Documents/w4111/project1/origin_data/movie_cast.csv' DELIMITERS ',' CSV HEADER;
+COPY movie_cast FROM '/home/zhuzilin/Documents/w4111/tiny-douban/origin_data/movie_cast.csv' DELIMITERS ',' CSV HEADER;
 SELECT COUNT(*)
 FROM movie_cast;
