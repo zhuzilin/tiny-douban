@@ -1,0 +1,49 @@
+<--macros for showing movie title and image-->
+{% macro movie_list(movies) -%}
+<div class="row">
+    {% for movie in movies %}
+        <div class="col">
+            <a href="{{'/movie/{}'.format(movie['movie_id'])}}">
+                <img src="{{'https://image.tmdb.org/t/p/w154/' + movie['poster_path']}}"/>
+            </a>
+            <a href="{{'/movie/{}'.format(movie['movie_id'])}}">
+                <p>{{ movie['title'] }}</p>
+            </a>
+      </div>
+    {% endfor %}
+</div>
+
+{%- endmacro %}
+
+{% macro movie_info(movie, ratings) -%}
+    <div class="movie row">
+        <div class="movie-info col">
+            <img src="{{'https://image.tmdb.org/t/p/w185/' + movie['poster_path']}}"/>
+        </div>
+        <div class="movie-info col">
+            {% for rating in ratings %}
+            <p>{{"{}: {}".format(rating['rate'], rating['count'])}}</p>
+            {% endfor %}
+        </div>
+    </div>
+    <h2>Overview</h2>
+    <p>
+        {{ movie['overview'] }}
+    </p>
+{%- endmacro %}
+
+{% macro navbar(login) -%}
+    <nav class="navbar navbar-dark bg-dark">
+        <a class="navbar-brand" href="/">Tiny DouBan</a>
+        <form class="form-inline">
+            <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+            <button class="btn btn-outline-info my-2 my-sm-0" type="submit">Search</button>
+        </form>
+        {% if login %}
+            <a class="btn btn-outline-info my-2 my-sm-0" href="/logout">logout</a>
+        {% else %}
+            <a class="btn btn-outline-info my-2 my-sm-0" href="/login">login</a>
+            <a class="btn btn-info my-2 my-sm-0" href="/signup">signup</a>
+        {% endif %}
+    </nav>
+{%- endmacro %}

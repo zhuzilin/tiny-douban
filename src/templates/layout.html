@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% block head %}
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+          crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <title>{% block title %}{% endblock %}Tiny DouBan</title>
+    {% endblock %}
+</head>
+<body>
+{% import "macro.html" as macro %}
+<div class="container">
+    <div id="nav">
+        {% block nav %}
+        {{macro.navbar()}}
+        {% endblock %}
+    </div>
+    <div id="content">{% block content %}{% endblock %}</div>
+</div>
+<footer id="footer" class="fixed-bottom">
+    <div class="container">
+        {% block footer %}
+        &copy; Copyright 2019 by
+        <a href="https://github.com/zhuzilin">Feihong Liu</a> and
+        <a href="https://github.com/liufh3">Zilin Zhu</a>.
+        {% endblock %}
+    </div>
+</footer>
+</body>
+</html>

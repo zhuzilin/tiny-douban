@@ -1,0 +1,7 @@
+{% import "macro.html" as macro %}
+
+{% extends "layout.html" %}
+{% block content %}
+<h1>All time best</h1>
+{{macro.movie_list(all_time_bests)}}
+{% endblock %}
