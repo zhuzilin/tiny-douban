@@ -6,8 +6,8 @@
           integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
           crossorigin="anonymous">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
-    <title>{% block title %}Tiny DouBan{% endblock %}</title>
     {% endblock %}
+    <title>{% block title %}Tiny DouBan{% endblock %}</title>
 </head>
 <body>
 {% import "macro.html" as macro %}
@@ -18,7 +18,7 @@
     </div>
     <div id="content">{% block content %}{% endblock %}</div>
 </div>
-<footer id="footer" class="fixed-bottom">
+<footer id="footer">
     <div class="container">
         {% block footer %}
         &copy; Copyright 2019 by
@@ -27,5 +27,7 @@
         {% endblock %}
     </div>
 </footer>
+{% block script %}
+{% endblock %}
 </body>
 </html>
