@@ -47,18 +47,6 @@ def teardown_request(exception):
     except Exception as e:
         pass
 
-"""
-with rk(movie_id,rating) as ( 
-    select r.movie_id, avg(r.rate)
-    from customer_comment_movie r
-    group by r.movie_id
-    having count(*) > 1000
-    order by avg(r.rate) desc
-    limit 7)
-select m.title, m.movie_id, m.poster_path, r.rating
-from movie m, rk r
-where m.movie_id = r.movie_id;
-"""
 @app.route('/')
 def index():
     # DEBUG: this is debugging code to see what request looks like
@@ -69,16 +57,16 @@ def index():
         print('your are logged in with {}'.format(session['username']))
     cursor = g.conn.execute("""
 with rk(movie_id,rating) as ( 
-    select r.movie_id, avg(r.rate)
-    from customer_comment_movie r
-    group by r.movie_id
-    having count(*) > 1000
-    order by avg(r.rate) desc
+    select r.movie_id, r.rating
+    from movie_rating r
+    where r.num > 1000
+    order by r.rating desc
     limit 7)
 select m.title, m.movie_id, m.poster_path, r.rating
 from movie m, rk r
 where m.movie_id = r.movie_id;
 """)
+    # cursor 的类型是resultproxy
     all_time_best = cursor.fetchall()
 
     return render_template('index.html', all_time_bests=all_time_best, login=session['login'])
@@ -86,6 +74,8 @@ where m.movie_id = r.movie_id;
 
 @app.route('/movie/<int:movie_id>')
 def movie(movie_id):
+    if 'login' not in session:
+        session['login'] = False
     # basic movie info
     cursor = g.conn.execute("""
 SELECT *
@@ -122,11 +112,60 @@ LIMIT 6
     return render_template("movie.html", movie=movie, ratings=ratings, staffs=staffs, login=session['login'])
 
 
-# Example of adding new data to the database
-@app.route('/add', methods=['POST'])
-def add():
-    pass
+@app.route('/user/<int:user_id>')
+def user(user_id):
+    if 'login' not in session:
+        session['login'] = False
+    else:
+        user_id = session['uid']
+    cursor = g.conn.execute("""
+select 
+    """)
 
+@app.route('/staff/<int:staff_id>')
+def staff(staff_id):
+    if 'login' not in session:
+        session['login'] = False
+    cursor = g.conn.execute("""
+SELECT * 
+FROM staff
+WHERE staff_id = {}
+    """.format(staff_id))
+    staff = cursor.first()
+
+    cursor = g.conn.execute("""
+with srk(movie_id, title, poster_path) as (
+select m.movie_id, m.title, m.poster_path
+from movie m, movie_cast ca
+where (ca.staff_id = {} and ca.movie_id = m.movie_id)
+union
+select m.movie_id, m.title, m.poster_path
+from movie m, movie_crew cr
+where (cr.staff_id = {} and cr.movie_id = m.movie_id)
+)
+
+select s.title, s.movie_id, s.poster_path, mr.rating
+from movie_rating mr, srk s
+where s.movie_id = mr.movie_id
+order by mr.rating DESC
+limit 7
+    """.format(staff_id,staff_id))
+    staff_best_movie = cursor.fetchall()
+    cursor = g.conn.execute("""
+with cs(staff_id, name, profile_path) as (
+select s.staff_id, s.name, s.profile_path
+from movie_cast ca1, movie_cast ca2, staff s
+where (ca1.staff_id = {} and ca1.movie_id = ca2.movie_id and ca2.staff_id = s.staff_id and s.profile_path is not NULL)
+UNION
+select s.staff_id, s.name, s.profile_path
+from movie_crew cr1, movie_crew cr2, staff s
+where (cr1.staff_id = {} and cr1.movie_id = cr2.movie_id and cr2.movie_id = s.staff_id and s.profile_path is not NULL)
+)
+
+select * from cs limit 7
+    """.format(staff_id,staff_id))
+    co_staff = cursor.fetchall()
+    return render_template("staff.html", staff=staff, staff_best_movie=staff_best_movie, co_staff = co_staff, login=session['login'])
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -135,6 +174,7 @@ def login():
         cursor = g.conn.execute("""
 SELECT customer_id AS uid, username, password
 FROM customer
+
 WHERE username = '{}' AND password = '{}';
 """.format(request.form['username'], request.form['password']))
         user = cursor.first()

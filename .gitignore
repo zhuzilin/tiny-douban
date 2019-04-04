@@ -105,3 +105,6 @@ venv.bak/
 
 # data
 origin_data/
+
+# env
+src/env.py

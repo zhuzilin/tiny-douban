@@ -1,0 +1,16 @@
+{% import "macro.html" as macro %}
+
+{% extends "layout.html" %}
+
+{% block nav %}
+{{macro.navbar(login)}}
+{% endblock %}
+
+{% block content %}
+<h1>{{ staff['name'] }}</h1>
+{{macro.staff_info(staff)}}
+<h2>Best Movies</h2>
+{{macro.staff_movie_list(staff_best_movie)}}
+<h3>Cooperators</h3>
+{{macro.co_star_list(co_staff)}}
+{% endblock %}

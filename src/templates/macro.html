@@ -71,3 +71,43 @@
     {% endfor %}
 </div>
 {%- endmacro %}
+
+{% macro staff_info(staff) -%}
+    <div class="staff row">
+        <div class="staff-poster col">
+            <img src="{{'https://image.tmdb.org/t/p/w154/' + staff['profile_path']}}"/>
+        </div>
+    </div>
+{%- endmacro %}
+
+{% macro staff_movie_list(staff_best_movie) -%}
+<div class="row">
+    {% for movie in staff_best_movie %}
+        <div class="col">
+            <p>{{"Rating: {:.1f}".format(movie['rating'])}}</p>
+            <a href="{{'/movie/{}'.format(movie['movie_id'])}}">
+                <img src="{{'https://image.tmdb.org/t/p/w92/' + movie['poster_path']}}"/>
+            </a>
+            <a href="{{'/movie/{}'.format(movie['movie_id'])}}">
+                <p>{{ movie['title'] }}</p>
+            </a>
+
+        </div>
+    {% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro co_star_list(co_staff) -%}
+<div class="row">
+    {% for staff in co_staff %}
+        <div class="col">
+            <a href="{{'/staff/{}'.format(staff['staff_id'])}}">
+                <img src="{{'https://image.tmdb.org/t/p/w92/' + staff['profile_path']}}"/>
+            </a>
+            <a href="{{'/staff/{}'.format(staff['staff_id'])}}">
+                <p>{{ staff['name'] }}</p>
+            </a>
+        </div>
+    {% endfor %}
+</div>
+{%- endmacro %}
