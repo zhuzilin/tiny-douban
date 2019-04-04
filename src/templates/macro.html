@@ -1,7 +1,7 @@
 <--macros for showing movie title and image-->
 
 {% macro navbar(login) -%}
-    <nav class="navbar navbar-dark bg-dark">
+    <nav id="navbar" class="navbar navbar-dark bg-dark">
         <a class="navbar-brand" href="/">Tiny DouBan</a>
         <form class="form-inline">
             <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
@@ -23,7 +23,11 @@
     {% for movie in movies %}
         <div class="col">
             <a href="{{'/movie/{}'.format(movie['movie_id'])}}">
-                <img src="{{'https://image.tmdb.org/t/p/w92/' + movie['poster_path']}}"/>
+                {% if movie['poster_path'] %}
+                    <img src="{{'https://image.tmdb.org/t/p/w92/' + movie['poster_path']}}"/>
+                {% else %}
+                    <img src="{{ url_for('static', filename='blank92.jpg') }}"/>
+                {% endif %}
             </a>
             <a href="{{'/movie/{}'.format(movie['movie_id'])}}">
                 <p>{{ movie['title'] }}</p>
@@ -33,36 +37,16 @@
 </div>
 {%- endmacro %}
 
-{% macro movie_info(movie, ratings) -%}
-    <div class="movie row">
-        <div class="movie-poster col">
-            <img src="{{'https://image.tmdb.org/t/p/w154/' + movie['poster_path']}}"/>
-        </div>
-        <div class="movie-info col">
-            {% for key in movie.keys() %}
-                {% if key not in ['overview', 'homepage', 'poster_path'] %}
-                    {{"{}: {}".format(key, movie[key])}} <br>
-                {% endif %}
-            {% endfor %}
-        </div>
-        <div class="rating-info col">
-            {% for rating in ratings %}
-            {{"{}: {}".format((2*rating['rate'])|int, rating['count'])}} <br>
-            {% endfor %}
-        </div>
-    </div>
-    <h2>Overview</h2>
-    <p>
-        {{ movie['overview'] }}
-    </p>
-{%- endmacro %}
-
 {% macro staff_list(staffs) -%}
 <div class="row">
     {% for staff in staffs %}
         <div class="col">
             <a href="{{'/staff/{}'.format(staff['staff_id'])}}">
-                <img src="{{'https://image.tmdb.org/t/p/w92/' + staff['profile_path']}}"/>
+                {% if staff['profile_path'] %}
+                    <img src="{{'https://image.tmdb.org/t/p/w92/' + staff['profile_path']}}"/>
+                {% else %}
+                    <img src="{{ url_for('static', filename='blank92.jpg') }}"/>
+                {% endif %}
             </a>
             <a href="{{'/staff/{}'.format(staff['staff_id'])}}">
                 <p>{{ staff['name'] }}</p>

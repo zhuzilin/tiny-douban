@@ -7,6 +7,12 @@
 {% endblock %}
 
 {% block content %}
-<h2>All time best</h2>
+<h3>All time best</h3>
 {{ macro.movie_list(all_time_bests) }}
+{% for genre in best_genre_movies %}
+    <a href="{{ '/genre/{}?p=1'.format(best_genre_movies[genre][0]) }}">
+        <h3>{{ genre }}</h3>
+    </a>
+    {{ macro.movie_list(best_genre_movies[genre][1]) }}
+{% endfor %}
 {% endblock %}

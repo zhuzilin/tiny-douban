@@ -2,13 +2,118 @@
 
 {% extends "layout.html" %}
 
+{% block title %}
+{{ movie['title'] }}
+{% endblock %}
+
 {% block nav %}
 {{macro.navbar(login)}}
 {% endblock %}
 
 {% block content %}
-<h1>{{ movie['title'] }}</h1>
-{{macro.movie_info(movie, ratings)}}
+<h3>{{ movie['title'] }}</h3>
+    <div class="movie row">
+        <div class="movie-poster col">
+            <img src="{{'https://image.tmdb.org/t/p/w154/' + movie['poster_path']}}"/>
+        </div>
+        <div class="movie-info col-md">
+            director:  {{ staffs[0]['name'] }} <br>
+            genre:
+            {% for genre in genres %}
+                {% if loop.index0 %}
+                    ,
+                {% endif %}
+                <a href="{{ '/genre/{}?p=1'.format(genre['genre_id']) }}">
+                   {{ genre['genre_name'] }}
+                </a>
+            {% endfor %} <br>
+            company:
+            {% for company in companies %}
+                {% if loop.index0 %}
+                    ,
+                {% endif %}
+                {{ company['name'] }}
+            {% endfor %} <br>
+            country:
+            {% for country in countries %}
+                {% if loop.index0 %}
+                    ,
+                {% endif %}
+                {{ country['name'] }}
+            {% endfor %} <br>
+            {% for key in movie.keys() %}
+                {% if key not in ['overview', 'homepage', 'poster_path', 'title', 'movie_id'] %}
+                    {{ "{}: {}".format(key, movie[key]) }} <br>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <div class="rating col">
+            <h2 id="rating-average"></h2>
+            <div id="rating-svg">
+            </div>
+            <p id="rating-count"></p>
+        </div>
+    </div>
+    <h2>Overview</h2>
+    <p>
+        {{ movie['overview'] }}
+    </p>
 <h2>Staffs</h2>
 {{ macro.staff_list(staffs) }}
+{% endblock %}
+
+{% block script %}
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script>
+    'use strict';
+    const w = 400;
+    const h = 200;
+    let data = {{ ratings|safe }};
+    let sum = data.reduce((a, b) => (a + b));
+    let rating = 0;
+    for(let i=10; i > 0; i--) {
+        rating += i * data[10 - i] / sum;
+    }
+    d3.select('#rating-average')
+        .text(rating.toFixed(2));
+    d3.select('#rating-count')
+        .text(`${sum} ratings`);
+    let svg = d3.select("#rating-svg")
+        .append("svg")
+        .attr("width", w)
+        .attr("height", h)
+    let ratings = svg.selectAll('rect')
+        .data(data)
+        .enter();
+    ratings.append('rect')
+        .attr('x', 30)
+        .attr('y', function(d, i) {
+            return i * 18;
+        })
+        .attr('width', function(d, i) {
+            return w * d / (sum + 20);
+        })
+        .attr('height', 16)
+        .style('fill', 'gold');
+    ratings.append('text')
+        .attr('x', 0)
+        .attr('y', function(d, i) {
+            return (i + 1) * 18 - 5;
+        })
+        .text(function(d, i) {
+            return 10 - i;
+        });
+    ratings.append('text')
+        .attr('x', function(d, i) {
+            return w * d / (sum + 20) + 50;
+        })
+        .attr('y', function(d, i) {
+            return (i + 1) * 18 - 5;
+        })
+        .text(function(d, i) {
+            if (d === 0)
+                return ``;
+            return `${(d / sum * 100).toFixed(1)}%`;
+        });
+</script>
 {% endblock %}

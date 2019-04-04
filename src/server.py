@@ -50,26 +50,53 @@ def teardown_request(exception):
 @app.route('/')
 def index():
     # DEBUG: this is debugging code to see what request looks like
-    print(request.args)
     if 'login' not in session:
         session['login'] = False
     if session['login']:
         print('your are logged in with {}'.format(session['username']))
     cursor = g.conn.execute("""
-with rk(movie_id,rating) as ( 
-    select r.movie_id, r.rating
-    from movie_rating r
-    where r.num > 1000
-    order by r.rating desc
-    limit 7)
 select m.title, m.movie_id, m.poster_path, r.rating
-from movie m, rk r
-where m.movie_id = r.movie_id;
+from movie m, movie_rating r
+where m.movie_id = r.movie_id and r.count > 1000
+limit 7
 """)
     # cursor 的类型是resultproxy
     all_time_best = cursor.fetchall()
 
-    return render_template('index.html', all_time_bests=all_time_best, login=session['login'])
+    # top 3 genre, top 7 movies
+    cursor = g.conn.execute("""
+with genre_rank as (
+select genre_id
+from movie_belong_genre
+group by genre_id
+order by count(*) desc
+limit 4 )
+select g.*
+from genre g, genre_rank r
+where g.genre_id = r.genre_id;
+    """)
+    most_genres = cursor.fetchall()
+    best_genre_movies = {}
+    for genre in most_genres:
+        cursor = g.conn.execute("""
+with movie_genre_rating as (
+    select r.movie_id, r.rating
+    from movie_belong_genre mg, movie_rating r
+    where mg.genre_id = '{}' and mg.movie_id = r.movie_id and r.count > 1000
+    order by r.rating desc
+    limit 7
+)
+select m.title, m.movie_id, m.poster_path, r.rating
+from movie_genre_rating r, movie m
+where r.movie_id = m.movie_id;
+            """.format(genre['genre_id']))
+        best_genre_movies[genre['genre_name']] = (genre['genre_id'], cursor.fetchall())
+    print(all_time_best)
+    print(best_genre_movies['Drama'])
+    return render_template('index.html',
+                           all_time_bests=all_time_best,
+                           best_genre_movies=best_genre_movies,
+                           login=session['login'])
 
 
 @app.route('/movie/<int:movie_id>')
@@ -91,16 +118,21 @@ FROM customer_comment_movie
 WHERE movie_id = {}
 GROUP BY rate
     """.format(movie_id))
-    ratings = cursor.fetchall()
+    ratings = [0] * 10
+    for row in cursor:
+        ratings[int(10 - row[0] * 2)] = row[1]
+    cursor.close()
 
     # staff info
+    # director
     cursor = g.conn.execute("""
 SELECT s.*
 FROM movie_crew mc, staff s
 WHERE mc.movie_id = {} AND mc.staff_id = s.staff_id AND mc.job='Director'
         """.format(movie_id))
-    staffs = list(cursor.fetchall())
-    assert len(staffs) == 1
+    # main actor
+    staffs = cursor.fetchall()
+    # assert len(staffs) == 1
     cursor = g.conn.execute("""
 SELECT s.*
 FROM movie_cast mc, staff s
@@ -108,8 +140,39 @@ WHERE mc.movie_id = {} AND mc.staff_id = s.staff_id
 ORDER BY mc.ordr
 LIMIT 6
     """.format(movie_id))
-    staffs += list(cursor.fetchall())
-    return render_template("movie.html", movie=movie, ratings=ratings, staffs=staffs, login=session['login'])
+    staffs += cursor.fetchall()
+
+    # genre
+    cursor = g.conn.execute("""
+    SELECT g.*
+    FROM movie_belong_genre mg, genre g
+    WHERE mg.movie_id = {} AND mg.genre_id = g.genre_id
+        """.format(movie_id))
+    genre = cursor.fetchall()
+
+    # company
+    cursor = g.conn.execute("""
+            SELECT c.company_name AS name
+            FROM company_release_movie mc, production_company c
+            WHERE mc.movie_id = {} AND mc.company_id = c.company_id
+                """.format(movie_id))
+    companies = cursor.fetchall()
+
+    # country
+    cursor = g.conn.execute("""
+        SELECT c.country_name AS name
+        FROM country_release_movie mc, production_country c
+        WHERE mc.movie_id = {} AND mc.country_id = c.country_id
+            """.format(movie_id))
+    countries = cursor.fetchall()
+    return render_template("movie.html",
+                           movie=movie,
+                           ratings=ratings,
+                           staffs=staffs,
+                           genres=genre,
+                           companies=companies,
+                           countries=countries,
+                           login=session['login'])
 
 
 @app.route('/user/<int:user_id>')
@@ -167,6 +230,45 @@ select * from cs limit 7
     co_staff = cursor.fetchall()
     return render_template("staff.html", staff=staff, staff_best_movie=staff_best_movie, co_staff = co_staff, login=session['login'])
 
+# Example of adding new data to the database
+@app.route('/genre/<int:genre_id>')
+def genre(genre_id):
+    if 'login' not in session:
+        session['login'] = False
+    p = request.args.get('p')
+    if p is None:
+        p = 1
+    else:
+        p = int(p)
+
+    cursor = g.conn.execute("""
+with genre_movie as (
+    select m.*
+    from movie m, movie_belong_genre mg
+    where mg.genre_id = {} and m.movie_id = mg.movie_id
+)
+select m.title, m.movie_id, m.poster_path, r.rating
+from movie_rating r, genre_movie m
+where r.movie_id = m.movie_id and r.count > 500
+order by r.rating desc
+limit 27 offset {};
+        """.format(genre_id, 27*(p-1)))
+    genre_movie = cursor.fetchall()
+
+    cursor = g.conn.execute("""
+select *
+from genre
+where genre_id = {};
+                """.format(genre_id))
+    genre = cursor.first()
+
+    return render_template('genre.html',
+                           genre=genre,
+
+                           p=p,
+                           genre_movie=genre_movie,
+                           login=session['login'])
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -190,6 +292,7 @@ WHERE username = '{}' AND password = '{}';
 
     return render_template("login.html", login=session['login'])
 
+
 @app.route('/logout')
 def logout():
     keys = list(session.keys())
@@ -202,6 +305,7 @@ def logout():
                url_for(default)
 
     return redirect(redirect_url())
+
 
 if __name__ == "__main__":
     import click
