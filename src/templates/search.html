@@ -1,0 +1,28 @@
+{% import "macro.html" as macro %}
+
+{% extends "layout.html" %}
+
+{% block nav %}
+{{macro.navbar(login)}}
+{% endblock %}
+
+{% block content %}
+<h3>Search result for "{{ text }}"</h3>
+{{ macro.movie_search_list(result) }}
+<nav aria-label="Page navigation example">
+    <ul class="pagination">
+        {% if p != 1%}
+            <li class="page-item">
+                <a class="page-link" href="{{ '/search?text={}&type={}&p={}'.format(text, type, p-1) }}">
+                    Previous
+                </a>
+            </li>
+        {% endif %}
+        <li class="page-item">
+            <a class="page-link" href="{{ '/search?text={}&type={}&p={}'.format(text, type, p+1) }}">
+                Next
+            </a>
+        </li>
+    </ul>
+</nav>
+{% endblock %}

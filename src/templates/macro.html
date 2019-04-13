@@ -3,10 +3,10 @@
 {% macro navbar(login) -%}
     <nav id="navbar" class="navbar navbar-dark bg-dark">
         <a class="navbar-brand" href="/">Tiny DouBan</a>
-        <form class="form-inline">
-            <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-            <button class="btn btn-outline-info my-2 my-sm-0" type="submit">Search</button>
-        </form>
+        <div class="form-inline">
+            <input id="search-text" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+            <button id="search-button" class="btn btn-outline-info my-2 my-sm-0">Search</button>
+        </div>
         {% if login %}
             <a class="btn btn-outline-info my-2 my-sm-0" href="/logout">logout</a>
         {% else %}
@@ -16,6 +16,15 @@
         </div>
         {% endif %}
     </nav>
+    <script>
+        button = document.getElementById("search-button");
+        input = document.getElementById("search-text");
+        button.onclick = () => {
+            if(input.value === "")
+                return;
+            window.location.replace(`/search?text=${input.value}&type=movie&p=1`);
+        }
+    </script>
 {%- endmacro %}
 
 {% macro movie_list(movies) -%}
@@ -35,6 +44,35 @@
         </div>
     {% endfor %}
 </div>
+{%- endmacro %}
+
+{% macro movie_search_list(movies) -%}
+<ul class="list-group list-group-flush">
+    {% for movie in movies %}
+        <li class="list-group-item">
+            <div class="row">
+                <div class="col">
+                    <a href="{{'/movie/{}'.format(movie['movie_id'])}}">
+                        {% if movie['poster_path'] %}
+                            <img src="{{'https://image.tmdb.org/t/p/w92/' + movie['poster_path']}}"/>
+                        {% else %}
+                            <img src="{{ url_for('static', filename='blank92.jpg') }}"/>
+                        {% endif %}
+                    </a>
+                </div>
+                <div class="col-10">
+                    <a href="{{'/movie/{}'.format(movie['movie_id'])}}">
+                        {{ movie['title'] }}
+                    </a>
+                    <br>
+                    director:  {{ movie['director'] }}
+                    <br>
+                    rating: {{ (movie['rating'] * 200)|int / 100 }}
+                </div>
+            </div>
+        </li>
+    {% endfor %}
+</ul>
 {%- endmacro %}
 
 {% macro staff_list(staffs) -%}
@@ -68,7 +106,7 @@
 <div class="row">
     {% for movie in staff_best_movie %}
         <div class="col">
-            <p>{{"Rating: {:.1f}".format(movie['rating'])}}</p>
+            <p>{{"Rating: {:.1f}".format(2*movie['rating'])}}</p>
             <a href="{{'/movie/{}'.format(movie['movie_id'])}}">
                 <img src="{{'https://image.tmdb.org/t/p/w92/' + movie['poster_path']}}"/>
             </a>

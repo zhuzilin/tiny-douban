@@ -14,9 +14,13 @@
 <h3>{{ movie['title'] }}</h3>
     <div class="movie row">
         <div class="movie-poster col">
-            <img src="{{'https://image.tmdb.org/t/p/w154/' + movie['poster_path']}}"/>
+            {% if movie['poster_path'] %}
+                <img src="{{'https://image.tmdb.org/t/p/w154/' + movie['poster_path']}}"/>
+            {% else %}
+                <img src="{{ url_for('static', filename='blank154.png') }}"/>
+            {% endif %}
         </div>
-        <div class="movie-info col-md">
+        <div class="movie-info col-5">
             director:  {{ staffs[0]['name'] }} <br>
             genre:
             {% for genre in genres %}

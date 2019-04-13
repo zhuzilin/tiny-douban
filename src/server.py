@@ -91,8 +91,7 @@ from movie_genre_rating r, movie m
 where r.movie_id = m.movie_id;
             """.format(genre['genre_id']))
         best_genre_movies[genre['genre_name']] = (genre['genre_id'], cursor.fetchall())
-    print(all_time_best)
-    print(best_genre_movies['Drama'])
+
     return render_template('index.html',
                            all_time_bests=all_time_best,
                            best_genre_movies=best_genre_movies,
@@ -230,7 +229,7 @@ select * from cs limit 7
     co_staff = cursor.fetchall()
     return render_template("staff.html", staff=staff, staff_best_movie=staff_best_movie, co_staff = co_staff, login=session['login'])
 
-# Example of adding new data to the database
+
 @app.route('/genre/<int:genre_id>')
 def genre(genre_id):
     if 'login' not in session:
@@ -264,9 +263,43 @@ where genre_id = {};
 
     return render_template('genre.html',
                            genre=genre,
-
                            p=p,
                            genre_movie=genre_movie,
+                           login=session['login'])
+
+
+@app.route('/search')
+def search():
+    if 'login' not in session:
+        session['login'] = False
+    # search text
+    text = request.args.get('text').lower()
+    # type
+    type = request.args.get('type')
+    assert type in ['movie', 'staff', 'company', 'country'], "wrong type for search!"
+    # page
+    p = request.args.get('p')
+    if p is None:
+        p = 1
+    else:
+        p = int(p)
+    if type == 'movie':
+        cursor = g.conn.execute("""
+SELECT m.title, m.movie_id, m.poster_path, r.rating, s.name AS director
+FROM movie m, movie_rating r, movie_crew mc, staff s
+WHERE r.movie_id = m.movie_id AND LOWER(m.title) LIKE '%%{}%%'
+    AND mc.movie_id = m.movie_id AND mc.staff_id = s.staff_id AND mc.job='Director'
+ORDER BY r.count DESC
+limit 20 offset {};
+            """.format(text, 20 * (p - 1)))
+
+    result = cursor.fetchall()
+    print(result)
+    return render_template('search.html',
+                           type=type,
+                           text=text,
+                           result=result,
+                           p=p,
                            login=session['login'])
 
 @app.route('/login', methods=['GET', 'POST'])
