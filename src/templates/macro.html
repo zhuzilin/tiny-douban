@@ -2,10 +2,12 @@
 
 {% macro navbar(login) -%}
     <nav id="navbar" class="navbar navbar-dark bg-dark">
-        <a class="navbar-brand" href="/">Tiny DouBan</a>
+        <a class="navbar-brand" href="/"><h3>Tiny DouBan</h3></a>
         <div class="form-inline">
             <input id="search-text" class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-            <button id="search-button" class="btn btn-outline-info my-2 my-sm-0">Search</button>
+            <button id="search-button" class="btn btn-outline-info my-2 my-sm-0">
+                <i class="fas fa-search"></i>
+            </button>
         </div>
         {% if login %}
             <a class="btn btn-outline-info my-2 my-sm-0" href="/logout">logout</a>

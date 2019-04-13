@@ -55,7 +55,7 @@
             <h2 id="rating-average"></h2>
             <div id="rating-svg">
             </div>
-            <p id="rating-count"></p>
+            <div id="rating-count"></div>
         </div>
     </div>
     <h2>Overview</h2>
@@ -71,7 +71,7 @@
 <script>
     'use strict';
     const w = 400;
-    const h = 200;
+    const h = 180;
     let data = {{ ratings|safe }};
     let sum = data.reduce((a, b) => (a + b));
     let rating = 0;
