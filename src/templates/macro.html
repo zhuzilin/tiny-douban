@@ -108,14 +108,14 @@
 <div class="row">
     {% for movie in staff_best_movie %}
         <div class="col">
-            <p>{{"Rating: {:.1f}".format(2*movie['rating'])}}</p>
             <a href="{{'/movie/{}'.format(movie['movie_id'])}}">
                 <img src="{{'https://image.tmdb.org/t/p/w92/' + movie['poster_path']}}"/>
             </a>
             <a href="{{'/movie/{}'.format(movie['movie_id'])}}">
-                <p>{{ movie['title'] }}</p>
+                <div>
+                    {{ movie['title'] }}
+                </div>
             </a>
-
         </div>
     {% endfor %}
 </div>
@@ -126,10 +126,16 @@
     {% for staff in co_staff %}
         <div class="col">
             <a href="{{'/staff/{}'.format(staff['staff_id'])}}">
-                <img src="{{'https://image.tmdb.org/t/p/w92/' + staff['profile_path']}}"/>
+                {% if staff['profile_path'] %}
+                    <img src="{{'https://image.tmdb.org/t/p/w92/' + staff['profile_path']}}"/>
+                {% else %}
+                    <img src="{{ url_for('static', filename='blank92.jpg') }}"/>
+                {% endif %}
             </a>
             <a href="{{'/staff/{}'.format(staff['staff_id'])}}">
-                <p>{{ staff['name'] }}</p>
+                <div>
+                    {{ staff['name'] }}
+                </div>
             </a>
         </div>
     {% endfor %}

@@ -230,7 +230,7 @@ where (cr.staff_id = {} and cr.movie_id = m.movie_id)
 
 select s.title, s.movie_id, s.poster_path, mr.rating
 from movie_rating mr, srk s
-where s.movie_id = mr.movie_id
+where s.movie_id = mr.movie_id and mr.count > 100
 order by mr.rating DESC
 limit 7
     """.format(staff_id, staff_id))
@@ -238,17 +238,43 @@ limit 7
 
     # co_staffs
     cursor = g.conn.execute("""
-with cs(staff_id, name, profile_path) as (
-select s.staff_id, s.name, s.profile_path
-from movie_cast ca1, movie_cast ca2, staff s
-where (ca1.staff_id = {} and ca1.movie_id = ca2.movie_id and ca2.staff_id = s.staff_id and s.profile_path is not NULL)
-UNION ALL
-select s.staff_id, s.name, s.profile_path
-from movie_crew cr1, movie_crew cr2, staff s
-where (cr1.staff_id = {} and cr1.movie_id = cr2.movie_id and cr2.movie_id = s.staff_id and s.profile_path is not NULL)
-)
-select * from cs limit 7
-    """.format(staff_id, staff_id))
+    with staff_movies as (
+        select movie_id
+        from movie_crew
+        where staff_id = {}
+        union
+        select movie_id
+        from movie_cast
+        where staff_id = {}
+    ), coworkers as (
+        select staff_id
+        from movie_crew
+        where movie_id in (
+            select *
+            from staff_movies
+        ) and job in ('Director', 'Writer') 
+        union all 
+        select staff_id
+        from movie_cast
+        where movie_id in (
+            select *
+            from staff_movies
+        ) and ordr <= 5
+    ), top_coworkers as (
+        select staff_id
+        from coworkers
+        group by staff_id
+        having staff_id <> {}
+        order by count(*) desc
+        limit 7
+    )
+    select *
+    from staff
+    where staff_id in (
+        select *
+        from top_coworkers
+    );
+    """.format(staff_id, staff_id, staff_id))
     co_staff = cursor.fetchall()
     return render_template("staff.html", staff=staff, staff_best_movie=staff_best_movie, co_staff = co_staff, login=session['login'])
 
