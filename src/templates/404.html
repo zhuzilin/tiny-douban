@@ -1,0 +1,14 @@
+{% import "macro.html" as macro %}
+
+{% extends "layout.html" %}
+
+{% block nav %}
+{{macro.navbar(login)}}
+{% endblock %}
+
+{% block alert %}
+{% endblock %}
+
+{% block content %}
+<img id="error" src="{{ url_for('static', filename='404.png') }}" alt="404" width="200">
+{% endblock %}

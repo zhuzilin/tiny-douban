@@ -27,6 +27,10 @@ a {
     display: inline-block;
 }
 
+.far {
+    display: inline-block;
+}
+
 .fa-star::before {
     color: gold;
 }
@@ -41,4 +45,13 @@ a {
     min-width: 200px;
     margin: auto;
     display: none;
+}
+
+#error {
+    margin: auto;
+    margin-top: 5%;
+    margin-bottom: 5%;
+    display: block;
+    height: 70%;
+    min-width: 200px;
 }
