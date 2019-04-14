@@ -1,7 +1,7 @@
 DROP TABLE IF EXISTS customer CASCADE;
 CREATE TABLE customer (
     customer_id int,
-    username text NOT NULL,
+    username text UNIQUE NOT NULL,
     password text NOT NULL,
     PRIMARY KEY (customer_id)
 );

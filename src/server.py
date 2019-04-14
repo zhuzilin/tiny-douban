@@ -129,9 +129,9 @@ SELECT s.*
 FROM movie_crew mc, staff s
 WHERE mc.movie_id = {} AND mc.staff_id = s.staff_id AND mc.job='Director'
         """.format(movie_id))
-    # main actor
-    staffs = cursor.fetchall()
+    directors = cursor.fetchall()
     # assert len(staffs) == 1
+    # main actor
     cursor = g.conn.execute("""
 SELECT s.*
 FROM movie_cast mc, staff s
@@ -139,7 +139,7 @@ WHERE mc.movie_id = {} AND mc.staff_id = s.staff_id
 ORDER BY mc.ordr
 LIMIT 6
     """.format(movie_id))
-    staffs += cursor.fetchall()
+    cast = cursor.fetchall()
 
     # genre
     cursor = g.conn.execute("""
@@ -164,13 +164,33 @@ LIMIT 6
         WHERE mc.movie_id = {} AND mc.country_id = c.country_id
             """.format(movie_id))
     countries = cursor.fetchall()
+
+    # user rating
+    user_rating = -1
+    if session['login']:
+        cursor = g.conn.execute("""
+SELECT rate
+FROM customer_comment_movie
+WHERE movie_id = {} AND customer_id = {}
+        """.format(movie_id, session['uid']))
+        user_rating = cursor.first()
+        if user_rating is None:
+            user_rating = -1
+        else:
+            user_rating = user_rating['rate']
+    uid = -1
+    if session['login']:
+        uid = session['uid']
     return render_template("movie.html",
                            movie=movie,
                            ratings=ratings,
-                           staffs=staffs,
+                           directors=directors,
+                           cast=cast,
                            genres=genre,
                            companies=companies,
                            countries=countries,
+                           user_rating=user_rating,
+                           uid=uid,
                            login=session['login'])
 
 
@@ -188,6 +208,7 @@ select
 def staff(staff_id):
     if 'login' not in session:
         session['login'] = False
+    # basic information
     cursor = g.conn.execute("""
 SELECT * 
 FROM staff
@@ -195,6 +216,7 @@ WHERE staff_id = {}
     """.format(staff_id))
     staff = cursor.first()
 
+    # best movies
     cursor = g.conn.execute("""
 with srk(movie_id, title, poster_path) as (
 select m.movie_id, m.title, m.poster_path
@@ -211,21 +233,22 @@ from movie_rating mr, srk s
 where s.movie_id = mr.movie_id
 order by mr.rating DESC
 limit 7
-    """.format(staff_id,staff_id))
+    """.format(staff_id, staff_id))
     staff_best_movie = cursor.fetchall()
+
+    # co_staffs
     cursor = g.conn.execute("""
 with cs(staff_id, name, profile_path) as (
 select s.staff_id, s.name, s.profile_path
 from movie_cast ca1, movie_cast ca2, staff s
 where (ca1.staff_id = {} and ca1.movie_id = ca2.movie_id and ca2.staff_id = s.staff_id and s.profile_path is not NULL)
-UNION
+UNION ALL
 select s.staff_id, s.name, s.profile_path
 from movie_crew cr1, movie_crew cr2, staff s
 where (cr1.staff_id = {} and cr1.movie_id = cr2.movie_id and cr2.movie_id = s.staff_id and s.profile_path is not NULL)
 )
-
 select * from cs limit 7
-    """.format(staff_id,staff_id))
+    """.format(staff_id, staff_id))
     co_staff = cursor.fetchall()
     return render_template("staff.html", staff=staff, staff_best_movie=staff_best_movie, co_staff = co_staff, login=session['login'])
 
@@ -309,7 +332,6 @@ def login():
         cursor = g.conn.execute("""
 SELECT customer_id AS uid, username, password
 FROM customer
-
 WHERE username = '{}' AND password = '{}';
 """.format(request.form['username'], request.form['password']))
         user = cursor.first()
@@ -318,12 +340,42 @@ WHERE username = '{}' AND password = '{}';
         else:
             session['uid'] = user['uid']
             session['username'] = user['username']
-            session['password'] = user['password']
             session['login'] = True
             print(session['uid'])
             return redirect(url_for('index'))
 
     return render_template("login.html", login=session['login'])
+
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        data = request.get_json()
+        cursor = g.conn.execute("""
+select *
+from customer
+where username = '{}'
+            """.format(data['username']))
+        r = cursor.fetchall()
+        if len(r) != 0:
+            res = jsonify(success=False)
+            print(res)
+            print(res.is_json)
+            print(res.get_data())
+            return res
+        else:
+            cursor = g.conn.execute("""
+select max(customer_id)
+from customer
+            """)
+            max_id = cursor.first()['max']
+            cursor = g.conn.execute("""
+insert into customer
+values({}, '{}', '{}')
+            """.format(max_id+1, data['username'], data['password']))
+            res = jsonify(success=True)
+            return res
+    return render_template("signup.html", login=session['login'])
 
 
 @app.route('/logout')
@@ -339,6 +391,32 @@ def logout():
 
     return redirect(redirect_url())
 
+
+@app.route('/rating', methods=['POST'])
+def rating():
+    data = request.get_json()
+    cursor = g.conn.execute("""
+select *
+from customer_comment_movie
+where customer_id = {} and movie_id = {}
+    """.format(data['uid'], data['movie_id']))
+    r = cursor.fetchall()
+    if len(r) == 0:
+        type = "create"
+        cursor = g.conn.execute("""
+insert into customer_comment_movie
+values({}, {}, {}, NULL)
+            """.format(data['uid'], data['rating']/2, data['movie_id']))
+    else:
+        type = "update"
+        cursor = g.conn.execute("""
+update customer_comment_movie
+set rate = {}
+where customer_id = {} and movie_id = {}
+                    """.format(data['rating']/2, data['uid'], data['movie_id']))
+    res = jsonify({})
+    res.status_code = 200
+    return res
 
 if __name__ == "__main__":
     import click

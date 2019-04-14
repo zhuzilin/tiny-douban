@@ -1,0 +1,71 @@
+{% import "macro.html" as macro %}
+
+{% extends "layout.html" %}
+
+{% block nav %}
+{{macro.navbar(login)}}
+{% endblock %}
+
+{% block content %}
+<div id="signup">
+    <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" class="form-control" id="username" name="username" placeholder="username">
+    </div>
+    <div class="form-group">
+        <label for="pw">Password</label>
+        <input type="password" class="form-control" id="pw" name="password" placeholder="password">
+    </div>
+    <div class="form-group">
+        <label for="repw">Password</label>
+        <input type="password" class="form-control" id="repw" name="reenter-password" placeholder="reenter password">
+    </div>
+    <button id="signup-button" class="btn btn-primary">Submit</button>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    let username = document.getElementById("username");
+    let pw = document.getElementById("pw");
+    let repw = document.getElementById("repw");
+    let button = document.getElementById("signup-button");
+    let alert = document.getElementById("alert");
+
+    button.onclick = () => {
+        if (username.value === "") {
+            alert.innerHTML = "username cannot be empty";
+            alert.style.display = "block";
+            return;
+        }
+        if (pw.value === "") {
+            alert.innerHTML = "password cannot be empty";
+            alert.style.display = "block";
+            return;
+        }
+        if (pw.value !== repw.value) {
+            alert.innerHTML = "password and reenter not match.";
+            alert.style.display = "block";
+            return;
+        }
+        alert.style.display = "none";
+        let post_data = { username: username.value, password: pw.value };
+        fetch('/signup', {
+            method: "POST",
+            body: JSON.stringify(post_data),
+            headers: {
+                "Content-Type": "application/json",
+            }
+        }).then(function(res) {
+            return res.json();
+        }).then(function({ success }) {
+            if (success) {
+                window.location.replace('/login');
+                return;
+            }
+            alert.innerHTML = "username was taken.";
+            alert.style.display = "block";
+          });
+    }
+</script>
+{% endblock %}

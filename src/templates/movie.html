@@ -11,6 +11,7 @@
 {% endblock %}
 
 {% block content %}
+
 <h3>{{ movie['title'] }}</h3>
     <div class="movie row">
         <div class="movie-poster col">
@@ -21,8 +22,16 @@
             {% endif %}
         </div>
         <div class="movie-info col-5">
-            director:  {{ staffs[0]['name'] }} <br>
-            genre:
+            Director:
+            {% for director in directors %}
+                {% if loop.index0 %}
+                    ,
+                {% endif %}
+                <a href="{{ '/staff/{}?p=1'.format(director['staff_id']) }}">
+                   {{ director['name'] }}
+                </a>
+            {% endfor %} <br>
+            Genre:
             {% for genre in genres %}
                 {% if loop.index0 %}
                     ,
@@ -31,14 +40,14 @@
                    {{ genre['genre_name'] }}
                 </a>
             {% endfor %} <br>
-            company:
+            Company:
             {% for company in companies %}
                 {% if loop.index0 %}
                     ,
                 {% endif %}
                 {{ company['name'] }}
             {% endfor %} <br>
-            country:
+            Country:
             {% for country in countries %}
                 {% if loop.index0 %}
                     ,
@@ -47,23 +56,62 @@
             {% endfor %} <br>
             {% for key in movie.keys() %}
                 {% if key not in ['overview', 'homepage', 'poster_path', 'title', 'movie_id'] %}
-                    {{ "{}: {}".format(key, movie[key]) }} <br>
+                    {{ "{}: {}".format(key.capitalize(), movie[key]) }} <br>
                 {% endif %}
             {% endfor %}
         </div>
         <div class="rating col">
-            <h2 id="rating-average"></h2>
-            <div id="rating-svg">
-            </div>
+            <h2>
+                <i class="fas fa-star"></i>
+                <span id="rating-average"></span>
+            </h2>
+            <div id="rating-svg"></div>
             <div id="rating-count"></div>
         </div>
     </div>
+    {% if login %}
+    <div>
+        Your rating is:
+        {% if user_rating <= 0 %}
+            <span data-toggle="modal" data-target="#exampleModalScrollable">
+                <i class="far fa-star"></i>
+            </span>
+        {% else %}
+            <span data-toggle="modal" data-target="#exampleModalScrollable">
+                <i class="fas fa-star"></i>
+                {{ (2*user_rating)|int }}
+            </span>
+
+        {% endif %}
+    </div>
+    <!-- Modal -->
+    <div class="modal fade" id="exampleModalScrollable" tabindex="-1" role="dialog" aria-labelledby="exampleModalScrollableTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalScrollableTitle">Update Your Rating</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <i class="fas fa-star"></i>
+                    <input id="rating-update" class="form-control" type="text" placeholder="0">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button id="rating-save" type="button" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     <h2>Overview</h2>
     <p>
         {{ movie['overview'] }}
     </p>
 <h2>Staffs</h2>
-{{ macro.staff_list(staffs) }}
+{{ macro.staff_list(directors + cast) }}
 {% endblock %}
 
 {% block script %}
@@ -79,13 +127,14 @@
         rating += i * data[10 - i] / sum;
     }
     d3.select('#rating-average')
+        .style("width", "70px")
         .text(rating.toFixed(2));
     d3.select('#rating-count')
         .text(`${sum} ratings`);
     let svg = d3.select("#rating-svg")
         .append("svg")
         .attr("width", w)
-        .attr("height", h)
+        .attr("height", h);
     let ratings = svg.selectAll('rect')
         .data(data)
         .enter();
@@ -120,4 +169,33 @@
             return `${(d / sum * 100).toFixed(1)}%`;
         });
 </script>
+<script>
+    let button = document.getElementById("rating-save");
+    let input = document.getElementById("rating-update");
+
+    button.onclick = () => {
+        let rating = parseInt(input.value);
+        if (rating < 1 || rating > 10)
+            return;
+        let post_data = { rating, movie_id: {{ movie['movie_id'] }}, uid: {{ uid }} };
+        fetch('/rating', {
+            method: "POST",
+            body: JSON.stringify(post_data),
+            headers: {
+                "Content-Type": "application/json",
+            }
+        }).then(function() {
+            window.location.reload();
+          });
+    }
+</script>
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
 {% endblock %}

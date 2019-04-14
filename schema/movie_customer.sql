@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS customer_comment_movie CASCADE;
 CREATE TABLE customer_comment_movie (
     customer_id int,
     rate float NOT NULL,
-	movie_id int,
+    movie_id int,
     content text,
     PRIMARY KEY (customer_id, movie_id),
     FOREIGN KEY (customer_id) REFERENCES customer(customer_id),
