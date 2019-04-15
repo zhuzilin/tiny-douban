@@ -2,6 +2,10 @@
 
 {% extends "layout.html" %}
 
+{% block title %}
+{{ staff['name'] }}
+{% endblock %}
+
 {% block nav %}
 {{macro.navbar(login)}}
 {% endblock %}
@@ -9,8 +13,12 @@
 {% block content %}
 <h1>{{ staff['name'] }}</h1>
 {{macro.staff_info(staff)}}
+<br />
+<br />
 <h2>Best Movies</h2>
 {{macro.staff_movie_list(staff_best_movie)}}
+<br />
+<br />
 <h3>Cooperators</h3>
 {{macro.co_star_list(co_staff)}}
 {% endblock %}

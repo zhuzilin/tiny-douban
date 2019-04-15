@@ -198,11 +198,22 @@ WHERE movie_id = {} AND customer_id = {}
 def user(user_id):
     if 'login' not in session:
         session['login'] = False
-    else:
-        user_id = session['uid']
     cursor = g.conn.execute("""
-select 
-    """)
+select *
+FROM customer
+where customer_id = {}
+    """.format(user_id))
+    user = cursor.first()
+
+    cursor = g.conn.execute("""
+select movie_id, movie_name, rate, poster_path 
+from movie_customer_name
+where customer_id = {}
+limit 7
+    """.format(user_id))
+    user_watched_movie = cursor.fetchall()
+    return render_template("user.html",user = user,user_watched_movie = user_watched_movie,login=session['login'])
+
 
 @app.route('/staff/<int:staff_id>')
 def staff(staff_id):
@@ -414,7 +425,6 @@ def logout():
         return request.args.get('next') or \
                request.referrer or \
                url_for(default)
-
     return redirect(redirect_url())
 
 

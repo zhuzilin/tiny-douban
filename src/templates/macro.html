@@ -10,7 +10,12 @@
             </button>
         </div>
         {% if login %}
-            <a class="btn btn-outline-info my-2 my-sm-0" href="/logout">logout</a>
+        <div class = "btn-group" role="group">
+            <a class="btn btn-outline-info my-2 my-sm-0" href="{{'/user/{}'.format(session['uid']) }}">
+                <i class="far fa-user"></i>
+            </a>
+            <a class="btn btn-info my-2 my-sm-0" href="/logout">logout</a>
+        </div>
         {% else %}
         <div class="btn-group" role="group">
             <a class="btn btn-outline-info my-2 my-sm-0" href="/login">login</a>
@@ -99,7 +104,11 @@
 {% macro staff_info(staff) -%}
     <div class="staff row">
         <div class="staff-poster col">
-            <img src="{{'https://image.tmdb.org/t/p/w154/' + staff['profile_path']}}"/>
+            {% if staff['profile_path'] %}
+                <img src="{{'https://image.tmdb.org/t/p/w154/' + staff['profile_path']}}"/>
+            {% else %}
+                <img src="{{ url_for('static', filename='blank92.jpg') }}"/>
+            {% endif %}
         </div>
     </div>
 {%- endmacro %}
@@ -135,6 +144,31 @@
             <a href="{{'/staff/{}'.format(staff['staff_id'])}}">
                 <div>
                     {{ staff['name'] }}
+                </div>
+            </a>
+        </div>
+    {% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro user_info(user) -%}
+    <div class="user row">
+        <div class="user-poster col">
+            <img src="{{ url_for('static', filename='user.jpg') }}"/>
+        </div>
+    </div>
+{%- endmacro %}
+
+{% macro user_watched_movie_list(user_watched_movie) -%}
+<div class="row">
+    {% for movie in user_watched_movie %}
+        <div class="col">
+            <a href="{{'/movie/{}'.format(movie['movie_id'])}}">
+                <img src="{{'https://image.tmdb.org/t/p/w92/' + movie['poster_path']}}"/>
+            </a>
+            <a href="{{'/movie/{}'.format(movie['movie_id'])}}">
+                <div>
+                    {{ movie['movie_name'] }}
                 </div>
             </a>
         </div>

@@ -2,6 +2,20 @@
 
 {% extends "layout.html" %}
 
-{% block content %}
-
+{% block title %}
+{{ user['username'] }}
 {% endblock %}
+
+{% block nav %}
+{{macro.navbar(login)}}
+{% endblock %}
+
+{% block content %}
+<h1>{{ user['username'] }}</h1>
+{{macro.user_info(user)}}
+<br />
+<br />
+<h2>Watched Movies</h2>
+{{macro.user_watched_movie_list(user_watched_movie)}}
+{% endblock %}
+
