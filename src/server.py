@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, jsonify, session, url_for
 from env import get_env
+import string
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
@@ -114,9 +115,9 @@ WHERE movie_id = {}
     cursor = g.conn.execute("""
 SELECT rate, COUNT(*)
 FROM customer_comment_movie
-WHERE movie_id = {}
+WHERE movie_id = %s
 GROUP BY rate
-    """.format(movie_id))
+    """, (movie_id,))
     ratings = [0] * 10
     for row in cursor:
         ratings[int(10 - row[0] * 2)] = row[1]
@@ -127,42 +128,42 @@ GROUP BY rate
     cursor = g.conn.execute("""
 SELECT s.*
 FROM movie_crew mc, staff s
-WHERE mc.movie_id = {} AND mc.staff_id = s.staff_id AND mc.job='Director'
-        """.format(movie_id))
+WHERE mc.movie_id = %s AND mc.staff_id = s.staff_id AND mc.job='Director'
+        """, (movie_id, ))
     directors = cursor.fetchall()
     # assert len(staffs) == 1
     # main actor
     cursor = g.conn.execute("""
 SELECT s.*
 FROM movie_cast mc, staff s
-WHERE mc.movie_id = {} AND mc.staff_id = s.staff_id
+WHERE mc.movie_id = %s AND mc.staff_id = s.staff_id
 ORDER BY mc.ordr
 LIMIT 6
-    """.format(movie_id))
+    """, (movie_id, ))
     cast = cursor.fetchall()
 
     # genre
     cursor = g.conn.execute("""
     SELECT g.*
     FROM movie_belong_genre mg, genre g
-    WHERE mg.movie_id = {} AND mg.genre_id = g.genre_id
-        """.format(movie_id))
+    WHERE mg.movie_id = %s AND mg.genre_id = g.genre_id
+        """, (movie_id, ))
     genre = cursor.fetchall()
 
     # company
     cursor = g.conn.execute("""
             SELECT c.company_name AS name
             FROM company_release_movie mc, production_company c
-            WHERE mc.movie_id = {} AND mc.company_id = c.company_id
-                """.format(movie_id))
+            WHERE mc.movie_id = %s AND mc.company_id = c.company_id
+                """, (movie_id, ))
     companies = cursor.fetchall()
 
     # country
     cursor = g.conn.execute("""
         SELECT c.country_name AS name
         FROM country_release_movie mc, production_country c
-        WHERE mc.movie_id = {} AND mc.country_id = c.country_id
-            """.format(movie_id))
+        WHERE mc.movie_id = %s AND mc.country_id = c.country_id
+            """, (movie_id, ))
     countries = cursor.fetchall()
 
     # user rating
@@ -171,8 +172,8 @@ LIMIT 6
         cursor = g.conn.execute("""
 SELECT rate
 FROM customer_comment_movie
-WHERE movie_id = {} AND customer_id = {}
-        """.format(movie_id, session['uid']))
+WHERE movie_id = %s AND customer_id = %s
+        """, (movie_id, session['uid']))
         user_rating = cursor.first()
         if user_rating is None:
             user_rating = -1
@@ -201,16 +202,16 @@ def user(user_id):
     cursor = g.conn.execute("""
 select *
 FROM customer
-where customer_id = {}
-    """.format(user_id))
+where customer_id = %s
+    """, (user_id, ))
     user = cursor.first()
 
     cursor = g.conn.execute("""
 select movie_id, movie_name, rate, poster_path 
 from movie_customer_name
-where customer_id = {}
+where customer_id = %s
 limit 7
-    """.format(user_id))
+    """, (user_id, ))
     user_watched_movie = cursor.fetchall()
     return render_template("user.html",user = user,user_watched_movie = user_watched_movie,login=session['login'])
 
@@ -223,8 +224,8 @@ def staff(staff_id):
     cursor = g.conn.execute("""
 SELECT * 
 FROM staff
-WHERE staff_id = {}
-    """.format(staff_id))
+WHERE staff_id = %s
+    """, (staff_id, ))
     staff = cursor.first()
 
     # best movies
@@ -232,11 +233,11 @@ WHERE staff_id = {}
 with srk(movie_id, title, poster_path) as (
 select m.movie_id, m.title, m.poster_path
 from movie m, movie_cast ca
-where (ca.staff_id = {} and ca.movie_id = m.movie_id)
+where (ca.staff_id = %s and ca.movie_id = m.movie_id)
 union
 select m.movie_id, m.title, m.poster_path
 from movie m, movie_crew cr
-where (cr.staff_id = {} and cr.movie_id = m.movie_id)
+where (cr.staff_id = %s and cr.movie_id = m.movie_id)
 )
 
 select s.title, s.movie_id, s.poster_path, mr.rating
@@ -244,7 +245,7 @@ from movie_rating mr, srk s
 where s.movie_id = mr.movie_id and mr.count > 100
 order by mr.rating DESC
 limit 7
-    """.format(staff_id, staff_id))
+    """, (staff_id, staff_id))
     staff_best_movie = cursor.fetchall()
 
     # co_staffs
@@ -252,11 +253,11 @@ limit 7
     with staff_movies as (
         select movie_id
         from movie_crew
-        where staff_id = {}
+        where staff_id = %s
         union
         select movie_id
         from movie_cast
-        where staff_id = {}
+        where staff_id = %s
     ), coworkers as (
         select staff_id
         from movie_crew
@@ -275,7 +276,7 @@ limit 7
         select staff_id
         from coworkers
         group by staff_id
-        having staff_id <> {}
+        having staff_id <> %s
         order by count(*) desc
         limit 7
     )
@@ -285,7 +286,7 @@ limit 7
         select *
         from top_coworkers
     );
-    """.format(staff_id, staff_id, staff_id))
+    """, (staff_id, staff_id, staff_id))
     co_staff = cursor.fetchall()
     return render_template("staff.html", staff=staff, staff_best_movie=staff_best_movie, co_staff = co_staff, login=session['login'])
 
@@ -304,21 +305,21 @@ def genre(genre_id):
 with genre_movie as (
     select m.*
     from movie m, movie_belong_genre mg
-    where mg.genre_id = {} and m.movie_id = mg.movie_id
+    where mg.genre_id = %s and m.movie_id = mg.movie_id
 )
 select m.title, m.movie_id, m.poster_path, r.rating
 from movie_rating r, genre_movie m
 where r.movie_id = m.movie_id and r.count > 500
 order by r.rating desc
-limit 27 offset {};
-        """.format(genre_id, 27*(p-1)))
+limit 27 offset %s;
+        """, (genre_id, 27*(p-1), ))
     genre_movie = cursor.fetchall()
 
     cursor = g.conn.execute("""
 select *
 from genre
-where genre_id = {};
-                """.format(genre_id))
+where genre_id = %s;
+                """, (genre_id, ))
     genre = cursor.first()
 
     return render_template('genre.html',
@@ -334,6 +335,8 @@ def search():
         session['login'] = False
     # search text
     text = request.args.get('text').lower()
+    # delete punctuation to prevent SQL injection
+    text = ''.join([c if c not in string.punctuation else ' ' for c in text])
     # type
     type = request.args.get('type')
     assert type in ['movie', 'staff', 'company', 'country'], "wrong type for search!"
@@ -347,11 +350,11 @@ def search():
         cursor = g.conn.execute("""
 SELECT m.title, m.movie_id, m.poster_path, r.rating, s.name AS director
 FROM movie m, movie_rating r, movie_crew mc, staff s
-WHERE r.movie_id = m.movie_id AND LOWER(m.title) LIKE '%%{}%%'
+WHERE r.movie_id = m.movie_id AND LOWER(m.title) LIKE %s
     AND mc.movie_id = m.movie_id AND mc.staff_id = s.staff_id AND mc.job='Director'
 ORDER BY r.count DESC
-limit 20 offset {};
-            """.format(text, 20 * (p - 1)))
+limit 20 offset %s;
+            """, ("%{}%".format(text), 20 * (p - 1)))
 
     result = cursor.fetchall()
     print(result)
@@ -365,12 +368,13 @@ limit 20 offset {};
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        print(request.form)
+        username = request.form['username']
+        pw = request.form['password']
         cursor = g.conn.execute("""
 SELECT customer_id AS uid, username, password
 FROM customer
-WHERE username = '{}' AND password = '{}';
-""".format(request.form['username'], request.form['password']))
+WHERE username = %s AND password = %s;
+""", (username, pw))
         user = cursor.first()
         if user is None:
             print("fail to login")
@@ -391,8 +395,8 @@ def signup():
         cursor = g.conn.execute("""
 select *
 from customer
-where username = '{}'
-            """.format(data['username']))
+where username = %s
+            """, (data['username']))
         r = cursor.fetchall()
         if len(r) != 0:
             res = jsonify(success=False)
@@ -408,8 +412,8 @@ from customer
             max_id = cursor.first()['max']
             cursor = g.conn.execute("""
 insert into customer
-values({}, '{}', '{}')
-            """.format(max_id+1, data['username'], data['password']))
+values(%s, %s, %s)
+            """, (max_id+1, data['username'], data['password']))
             res = jsonify(success=True)
             return res
     return render_template("signup.html", login=session['login'])
@@ -434,22 +438,22 @@ def rating():
     cursor = g.conn.execute("""
 select *
 from customer_comment_movie
-where customer_id = {} and movie_id = {}
-    """.format(data['uid'], data['movie_id']))
+where customer_id = %s and movie_id = %s
+    """, (data['uid'], data['movie_id']))
     r = cursor.fetchall()
     if len(r) == 0:
         type = "create"
         cursor = g.conn.execute("""
 insert into customer_comment_movie
-values({}, {}, {}, NULL)
-            """.format(data['uid'], data['rating']/2, data['movie_id']))
+values(%s, %s, %s, NULL)
+            """, (data['uid'], data['rating']/2, data['movie_id']))
     else:
         type = "update"
         cursor = g.conn.execute("""
 update customer_comment_movie
-set rate = {}
-where customer_id = {} and movie_id = {}
-                    """.format(data['rating']/2, data['uid'], data['movie_id']))
+set rate = %s
+where customer_id = %s and movie_id = %s
+                    """, (data['rating']/2, data['uid'], data['movie_id']))
     res = jsonify({})
     res.status_code = 200
     return res
